@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 声明网页的内容类型为text/html（HTML 文档），字符编码为utf-8（支持多语言，包括中文）。 -->
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<!-- 声明网页的主要语言为简体中文。-->
+	<meta http-equiv="Content-Language" content="zh-CN" />
+	<!-- 标注网页的作者为尹燕杰_yinaje，并提供联系邮箱yinaje@163.com。-->
+	<meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+	<!-- 声明网页版权归属，标注了版权标识和具体归属者尹燕杰_yinaje，强调 “保留所有权利”。 -->
+	<Meta name="Copyright" Content="尹燕杰_yinaje"/>
+	<Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+    
+    <title>专家库系统V3 - 指定专家设置</title>
+    <link rel="stylesheet" href="zjk.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">专家库系统V3</div>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <!-- 菜单将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 style="margin: 20px 0;">指定专家设置</h2>
+
+        <div class="toolbar">
+            <div class="button-group">
+                <button class="btn btn-primary" id="designateBtn">关联指定专家</button>
+                <button class="btn btn-danger" id="cancelDesignateBtn">取消指定专家</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="designatedTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectSingle"></th>
+                        <th>编号</th>
+                        <th>姓名</th>
+                        <th>身份证</th>
+                        <th>电话</th>
+                        <th>邮箱</th>
+                        <th>单位</th>
+                        <th>归属</th>
+                        <th>是否指定</th>
+                    </tr>
+                </thead>
+                <tbody id="designatedTableBody">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="zjk.js"></script>
+    <script src="db.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            if (!checkLoginStatus()) return;
+
+            // 验证用户权限（仅管理员可见）
+            const role = localStorage.getItem('role');
+            if (role !== 'admin') {
+                showMessage('您没有访问此页面的权限', true);
+                setTimeout(() => window.location.href = 'home.html', 2000);
+                return;
+            }
+
+            // 初始化专家列表
+            loadExpertList();
+
+            // 绑定事件处理程序
+            bindEventHandlers();
+        });
+
+        // 加载专家列表
+        async function loadExpertList() {
+            try {
+                const experts = await DB.getAllExperts();
+                const designatedExpert = await DB.getDesignatedExpert();
+                renderExpertTable(experts, designatedExpert);
+            } catch (error) {
+                showMessage('加载专家数据失败: ' + error.message, true);
+            }
+        }
+
+        // 渲染专家表格
+        function renderExpertTable(experts, designatedExpert) {
+            const tableBody = document.getElementById('designatedTableBody');
+            tableBody.innerHTML = '';
+
+            if (experts.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="9" style="text-align: center;">暂无专家数据</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+
+            experts.forEach(expert => {
+                const isDesignated = designatedExpert && expert.zjno === designatedExpert.zjno;
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="expertCheckbox" data-zjno="${expert.zjno}" ${isDesignated ? 'checked' : ''} ${isDesignated ? 'disabled' : ''}></td>
+                    <td>${expert.zjno}</td>
+                    <td>${expert.zjname}</td>
+                    <td>${expert.zjsfno}</td>
+                    <td>${expert.zjphone}</td>
+                    <td>${expert.zjemail}</td>
+                    <td>${expert.zjdw}</td>
+                    <td>${expert.zjsc}</td>
+                    <td>${isDesignated ? '<span style="color: green;">是</span>' : '否'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+
+            // 单选逻辑处理
+            const checkboxes = document.querySelectorAll('.expertCheckbox:not(:disabled)');
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    if (this.checked) {
+                        checkboxes.forEach(cb => cb !== this && (cb.checked = false));
+                    }
+                });
+            });
+        }
+
+        // 绑定事件处理程序
+        function bindEventHandlers() {
+            // 关联指定专家按钮
+            document.getElementById('designateBtn').addEventListener('click', handleDesignate);
+
+            // 取消指定专家按钮
+            document.getElementById('cancelDesignateBtn').addEventListener('click', handleCancelDesignate);
+        }
+
+        // 处理关联指定专家
+        async function handleDesignate() {
+            const checkedBoxes = document.querySelectorAll('.expertCheckbox:checked:not(:disabled)');
+            if (checkedBoxes.length !== 1) {
+                showMessage('请选择一位专家进行指定', true);
+                return;
+            }
+
+            const zjno = checkedBoxes[0].dataset.zjno;
+            try {
+                await DB.setDesignatedExpert(zjno);
+                showMessage('指定专家成功');
+                loadExpertList();
+            } catch (error) {
+                showMessage('指定专家失败: ' + error.message, true);
+            }
+        }
+
+        // 处理取消指定专家
+        async function handleCancelDesignate() {
+            try {
+                const designatedExpert = await DB.getDesignatedExpert();
+                if (!designatedExpert) {
+                    showMessage('当前没有指定专家', true);
+                    return;
+                }
+
+                if (!confirm(`确定要取消 ${designatedExpert.zjname} 的指定专家身份吗？`)) return;
+
+                // 将指定专家字段设为否
+                designatedExpert.zjzd = '否';
+                await DB.updateExpert(designatedExpert);
+                showMessage('取消指定专家成功');
+                loadExpertList();
+            } catch (error) {
+                showMessage('取消指定专家失败: ' + error.message, true);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 声明网页的内容类型为text/html（HTML 文档），字符编码为utf-8（支持多语言，包括中文）。 -->
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<!-- 声明网页的主要语言为简体中文。-->
+	<meta http-equiv="Content-Language" content="zh-CN" />
+	<!-- 标注网页的作者为尹燕杰_yinaje，并提供联系邮箱yinaje@163.com。-->
+	<meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+	<!-- 声明网页版权归属，标注了版权标识和具体归属者尹燕杰_yinaje，强调 “保留所有权利”。 -->
+	<Meta name="Copyright" Content="尹燕杰_yinaje"/>
+	<Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+    
+    <title>专家库系统V3 - 专家组名单抽取</title>
+    <link rel="stylesheet" href="zjk.css">
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">专家库系统V3</div>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <!-- 菜单将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+    </header>
+
+    <main class="container">
+        <h2 style="margin: 20px 0;">专家组名单抽取</h2>
+
+        <div class="toolbar">
+            <div class="search-group">
+                <div style="display: flex; align-items: center; margin-right: 20px;">
+                    <label for="internalCount" style="margin-right: 10px;">内部专家数量:</label>
+                    <input type="number" id="internalCount" min="0" max="30" value="0" style="width: 60px;">
+                </div>
+                <div style="display: flex; align-items: center; margin-right: 20px;">
+                    <label for="externalCount" style="margin-right: 10px;">外部专家数量:</label>
+                    <input type="number" id="externalCount" min="0" max="30" value="0" style="width: 60px;">
+                </div>
+                <div style="display: flex; align-items: center; margin-right: 20px;">
+                    <label class="switch" style="margin-right: 10px;">
+                        <input type="checkbox" id="designatedSwitch">
+                        <span class="slider"></span>
+                    </label>
+                    <label for="designatedSwitch" style="visibility: hidden; width: 100px;">指定开关</label>
+                </div>
+                <button class="btn btn-primary" id="extractBtn">抽取随机专家组名单</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="exportGroupBtn">导出专家组名单</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="groupTable">
+                <thead>
+                    <tr>
+                        <th>编号</th>
+                        <th>姓名</th>
+                        <th>单位</th>
+                        <th>身份证</th>
+                    </tr>
+                </thead>
+                <tbody id="groupTableBody">
+                    <tr>
+                        <td colspan="4" style="text-align: center;">请设置抽取参数并点击抽取按钮</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="zjk.js"></script>
+    <script src="xlsx.full.min.js"></script>
+    <script src="db.js"></script>
+    <script>
+        // 当前抽取的专家组成员
+        let currentGroup = [];
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            if (!checkLoginStatus()) return;
+
+            // 绑定事件处理程序
+            bindEventHandlers();
+        });
+
+        // 绑定事件处理程序
+        function bindEventHandlers() {
+            // 抽取按钮
+            document.getElementById('extractBtn').addEventListener('click', handleExtract);
+
+            // 导出按钮
+            document.getElementById('exportGroupBtn').addEventListener('click', handleExportGroup);
+
+            // 输入框验证
+            document.getElementById('internalCount').addEventListener('input', validateCountInput);
+            document.getElementById('externalCount').addEventListener('input', validateCountInput);
+        }
+
+        // 验证数量输入
+        function validateCountInput(e) {
+            const input = e.target;
+            const value = parseInt(input.value) || 0;
+            const min = parseInt(input.min);
+            const max = parseInt(input.max);
+
+            // 确保值在有效范围内
+            if (value < min) input.value = min;
+            if (value > max) input.value = max;
+        }
+
+        // 处理抽取专家组
+        async function handleExtract() {
+            const internalCount = parseInt(document.getElementById('internalCount').value) || 0;
+            const externalCount = parseInt(document.getElementById('externalCount').value) || 0;
+            const designatedSwitch = document.getElementById('designatedSwitch').checked;
+
+            // 验证输入
+            if (internalCount === 0 && externalCount === 0) {
+                showMessage('请至少设置一种专家类型的数量', true);
+                return;
+            }
+
+            try {
+                // 获取所有专家
+                const allExperts = await DB.getAllExperts();
+                if (allExperts.length === 0) {
+                    showMessage('专家库中没有数据，请先添加专家', true);
+                    return;
+                }
+
+                // 分离内部和外部专家
+                const internalExperts = allExperts.filter(e => e.zjsc === '内部专家');
+                const externalExperts = allExperts.filter(e => e.zjsc === '外部专家');
+
+                // 验证数量是否超过实际可用专家
+                if (internalCount > internalExperts.length) {
+                    showMessage(`内部专家数量不能超过实际内部专家数(${internalExperts.length})`, true);
+                    return;
+                }
+                if (externalCount > externalExperts.length) {
+                    showMessage(`外部专家数量不能超过实际外部专家数(${externalExperts.length})`, true);
+                    return;
+                }
+
+                // 随机抽取专家
+                const selectedInternal = shuffleArray(internalExperts).slice(0, internalCount);
+                const selectedExternal = shuffleArray(externalExperts).slice(0, externalCount);
+
+                // 获取指定专家
+                let designatedExpert = await DB.getDesignatedExpert();
+
+                // 如果没有指定专家且开关打开，则默认选择编号排序第三位的专家
+                if (designatedSwitch && !designatedExpert && allExperts.length >= 3) {
+                    // 按编号排序
+                    const sortedExperts = [...allExperts].sort((a, b) => {
+                        const numA = parseInt(a.zjno.replace('zj', ''));
+                        const numB = parseInt(b.zjno.replace('zj', ''));
+                        return numA - numB;
+                    });
+                    designatedExpert = sortedExperts[2]; // 第三位专家
+                }
+
+                // 如果指定开关打开且有指定专家，确保指定专家在抽取结果中
+                if (designatedSwitch && designatedExpert) {
+                    if (designatedExpert.zjsc === '内部专家') {
+                        // 如果指定专家是内部专家
+                        if (internalCount > 0) {
+                            // 检查是否已在选中列表中
+                            const index = selectedInternal.findIndex(e => e.zjno === designatedExpert.zjno);
+                            if (index === -1) {
+                                // 检查数组是否为空
+                                if (selectedInternal.length === 0) {
+                                    selectedInternal.push(designatedExpert);
+                                } else {
+                                    // 替换第一个元素
+                                    selectedInternal[0] = designatedExpert;
+                                }
+                            }
+                        }
+                    } else if (designatedExpert.zjsc === '外部专家') {
+                        // 如果指定专家是外部专家
+                        if (externalCount > 0) {
+                            // 检查是否已在选中列表中
+                            const index = selectedExternal.findIndex(e => e.zjno === designatedExpert.zjno);
+                            if (index === -1) {
+                                // 检查数组是否为空
+                                if (selectedExternal.length === 0) {
+                                    selectedExternal.push(designatedExpert);
+                                } else {
+                                    // 替换第一个元素
+                                    selectedExternal[0] = designatedExpert;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // 合并并排序结果
+                currentGroup = [...selectedInternal, ...selectedExternal]
+                    .sort((a, b) => {
+                        const numA = parseInt(a.zjno.replace('zj', ''));
+                        const numB = parseInt(b.zjno.replace('zj', ''));
+                        return numA - numB;
+                    });
+
+                // 渲染结果
+                renderGroupTable(currentGroup);
+                showMessage(`成功抽取 ${currentGroup.length} 名专家`);
+            } catch (error) {
+                showMessage('抽取专家组失败: ' + error.message, true);
+            }
+        }
+
+        // 渲染专家组表格
+        function renderGroupTable(group) {
+            const tableBody = document.getElementById('groupTableBody');
+            tableBody.innerHTML = '';
+
+            if (group.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="4" style="text-align: center;">暂无抽取结果</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+
+            group.forEach(expert => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${expert.zjno}</td>
+                    <td>${expert.zjname}</td>
+                    <td>${expert.zjdw}</td>
+                    <td>${expert.zjsfno}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 处理导出专家组名单
+        function handleExportGroup() {
+            if (currentGroup.length === 0) {
+                showMessage('没有可导出的专家组名单', true);
+                return;
+            }
+
+            try {
+                DB.exportToExcel(currentGroup, '专家组名单');
+            } catch (error) {
+                showMessage('导出失败: ' + error.message, true);
+            }
+        }
+
+        // 数组洗牌函数（随机排序）
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+    </script>
+</body>
+</html>

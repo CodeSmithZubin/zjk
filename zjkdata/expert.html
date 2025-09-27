@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- 声明网页的内容类型为text/html（HTML 文档），字符编码为utf-8（支持多语言，包括中文）。 -->
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<!-- 声明网页的主要语言为简体中文。-->
+	<meta http-equiv="Content-Language" content="zh-CN" />
+	<!-- 标注网页的作者为尹燕杰_yinaje，并提供联系邮箱yinaje@163.com。-->
+	<meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+	<!-- 声明网页版权归属，标注了版权标识和具体归属者尹燕杰_yinaje，强调 “保留所有权利”。 -->
+	<Meta name="Copyright" Content="尹燕杰_yinaje"/>
+	<Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+
+    <title>专家库系统V3 - 专家库维护</title>
+    <link rel="stylesheet" href="zjk.css">
+    <script src="xlsx.full.min.js"></script>
+    <style>
+        .form-modal .form-content {
+            background-color: #fff;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 800px;
+            position: relative;
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 20px;
+            background-color: #f1f1f1;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        .progress-bar {
+            height: 100%;
+            border-radius: 10px;
+            background-color: #4CAF50;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">专家库系统V3</div>
+            <button class="menu-toggle" id="menuToggle">☰</button>
+            <ul class="nav-menu" id="navMenu">
+                <!-- 菜单将通过JavaScript动态生成 -->
+            </ul>
+        </div>
+    </header>
+
+    <main class="container">
+        <div class="toolbar">
+            <div class="search-group">
+                <select id="归属Select">
+                    <option value="全部专家">全部专家</option>
+                    <option value="内部专家">内部专家</option>
+                    <option value="外部专家">外部专家</option>
+                </select>
+                <input type="text" id="searchInput" placeholder="输入搜索关键词...">
+                <button class="btn btn-primary" id="searchBtn">搜索</button>
+            </div>
+            <div class="button-group">
+                <button class="btn btn-primary" id="addBtn">新增</button>
+                <button class="btn btn-danger" id="deleteBtn">删除</button>
+                <button class="btn btn-primary" id="editBtn">编辑</button>
+                <button class="btn btn-primary" id="exportBtn">导出</button>
+                <input type="file" id="importFile" style="display: none" accept=".csv,.xlsx,.xls">
+                <button class="btn btn-primary" id="importBtn">导入</button>
+                <button class="btn btn-primary" id="templateBtn">下载模板</button>
+                <button class="btn btn-primary" id="initBtn">初始化</button>
+                <button class="btn btn-primary" id="backupBtn">备份</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="data-table" id="expertTable">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" id="selectAll"></th>
+                        <th>编号</th>
+                        <th>姓名</th>
+                        <th>身份证</th>
+                        <th>电话</th>
+                        <th>邮箱</th>
+                        <th>单位</th>
+                        <th>备注</th>
+                        <th>归属</th>
+                    </tr>
+                </thead>
+                <tbody id="expertTableBody">
+                    <!-- 表格内容将通过JavaScript动态生成 -->
+                </tbody>
+            </table>
+        </div>
+
+        <div class="pagination" id="pagination">
+            <!-- 分页控件将通过JavaScript动态生成 -->
+        </div>
+    </main>
+
+    <!-- 新增/编辑专家模态框 -->
+    <div class="form-modal" id="expertModal" style="display: none;">
+        <div class="form-content">
+            <h2 id="modalTitle">新增专家</h2>
+            <form id="expertForm">
+                <input type="hidden" id="formMode" value="add">
+                <input type="hidden" id="formZjno">
+                
+                <div class="form-group">
+                    <label for="formZjname">姓名 *</label>
+                    <input type="text" id="formZjname" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjsfno">身份证 *</label>
+                    <input type="text" id="formZjsfno" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjphone">电话 *</label>
+                    <input type="text" id="formZjphone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjemail">邮箱 *</label>
+                    <input type="email" id="formZjemail" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjdw">单位 *</label>
+                    <input type="text" id="formZjdw" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjbz">备注 *</label>
+                    <input type="text" id="formZjbz" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="formZjsc">归属 *</label>
+                    <select id="formZjsc" required>
+                        <option value="内部专家">内部专家</option>
+                        <option value="外部专家">外部专家</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" id="cancelBtn">关闭</button>
+                    <button type="submit" class="btn btn-success">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="zjk.js"></script>
+    <script src="db.js"></script>
+    <script>
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            if (!checkLoginStatus()) return;
+
+            // 验证用户权限
+            const role = localStorage.getItem('role');
+            const isAdmin = role === 'admin';
+            const isMaintainer = role === 'maintainer';
+
+            // 根据权限控制按钮显示
+            if (!isAdmin && !isMaintainer) {
+                document.getElementById('deleteBtn').style.display = 'none';
+                document.getElementById('importBtn').style.display = 'none';
+                document.getElementById('initBtn').style.display = 'none';
+                document.getElementById('backupBtn').style.display = 'none';
+            }
+            if (!isAdmin) {
+                document.getElementById('templateBtn').style.display = 'none';
+            }
+
+            // 初始化专家列表
+            loadExpertList();
+
+            // 绑定事件处理程序
+            bindEventHandlers();
+        });
+
+        // 加载专家列表，支持分页
+        async function loadExpertList(page = 1) {
+            try {
+                const experts = await DB.getAllExperts();
+                const pageSize = 20;
+                const startIndex = (page - 1) * pageSize;
+                const paginatedExperts = experts.slice(startIndex, startIndex + pageSize);
+                renderExpertTable(paginatedExperts);
+                renderPagination(experts.length);
+                
+                // 检查数据是否为空，自动初始化
+                if (experts.length === 0) {
+                    showMessage('首次加载，正在初始化专家库数据...', false);
+                    try {
+                        await DB.initDB();
+                        showMessage('专家库数据初始化成功', false);
+                        // 重新加载数据
+                        const newExperts = await DB.getAllExperts();
+                        const newPaginatedExperts = newExperts.slice(startIndex, startIndex + pageSize);
+                        renderExpertTable(newPaginatedExperts);
+                        renderPagination(newExperts.length);
+                    } catch (initError) {
+                        showMessage('自动初始化失败，请手动点击"初始化"按钮', true);
+                        console.error('初始化失败:', initError);
+                    }
+                }
+            } catch (error) {
+                showMessage('加载专家数据失败: ' + error.message, true);
+            }
+        }
+
+        // 渲染专家表格
+        function renderExpertTable(experts) {
+            const tableBody = document.getElementById('expertTableBody');
+            tableBody.innerHTML = '';
+
+            if (experts.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="9" style="text-align: center;">暂无专家数据</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+
+            experts.forEach(expert => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><input type="checkbox" class="expertCheckbox" data-zjno="${expert.zjno}"></td>
+                    <td>${expert.zjno}</td>
+                    <td>${expert.zjname}</td>
+                    <td>${expert.zjsfno}</td>
+                    <td>${expert.zjphone}</td>
+                    <td>${expert.zjemail}</td>
+                    <td>${expert.zjdw}</td>
+                    <td>${expert.zjbz}</td>
+                    <td>${expert.zjsc}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // 渲染分页控件
+        function renderPagination(totalItems) {
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+
+            const totalPages = Math.ceil(totalItems / 20);
+            if (totalPages <= 1) return;
+
+            for (let i = 1; i <= totalPages; i++) {
+                const li = document.createElement('li');
+                li.innerHTML = `<button class="page-btn ${i === 1 ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                pagination.appendChild(li);
+            }
+
+            // 添加分页按钮点击事件
+            document.querySelectorAll('.page-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const page = parseInt(this.dataset.page);
+                    loadExpertList(page);
+                    // 更新活跃状态
+                    document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        }
+
+        // 绑定事件处理程序
+        function bindEventHandlers() {
+            // 搜索按钮
+            document.getElementById('searchBtn').addEventListener('click', handleSearch);
+
+            // 新增按钮
+            document.getElementById('addBtn').addEventListener('click', () => openExpertModal('add'));
+
+            // 编辑按钮
+            document.getElementById('editBtn').addEventListener('click', handleEdit);
+
+            // 删除按钮
+            document.getElementById('deleteBtn').addEventListener('click', handleDelete);
+
+            // 导出按钮
+            document.getElementById('exportBtn').addEventListener('click', handleExport);
+
+            // 导入按钮
+            document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFile').click());
+            document.getElementById('importFile').addEventListener('change', handleImport);
+
+            // 初始化按钮
+            document.getElementById('initBtn').addEventListener('click', handleInit);
+
+            // 备份按钮
+            document.getElementById('backupBtn').addEventListener('click', handleBackup);
+
+            // 关闭模态框按钮
+            document.getElementById('cancelBtn').addEventListener('click', () => closeExpertModal());
+
+            // 表单提交
+            document.getElementById('expertForm').addEventListener('submit', handleFormSubmit);
+            // 全选复选框
+            document.getElementById('selectAll').addEventListener('change', handleSelectAll);
+        }
+
+        // 搜索处理
+        async function handleSearch() {
+            const zjsc = document.getElementById('归属Select').value;
+            const keyword = document.getElementById('searchInput').value.trim();
+
+            try {
+                const query = {};
+                if (zjsc !== '全部专家') query.zjsc = zjsc;
+                if (keyword) query.keyword = keyword;
+
+                const experts = await DB.queryExperts(query);
+                renderExpertTable(experts);
+                renderPagination(experts.length);
+            } catch (error) {
+                showMessage('搜索失败: ' + error.message, true);
+            }
+        }
+        // 打开专家模态框
+        function openExpertModal(mode, expert = null) {
+            const modal = document.getElementById('expertModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const formMode = document.getElementById('formMode');
+            const formZjno = document.getElementById('formZjno');
+
+            // 重置表单
+            document.getElementById('expertForm').reset();
+
+            if (mode === 'add') {
+                modalTitle.textContent = '新增专家';
+                formMode.value = 'add';
+                formZjno.value = '';
+            } else if (mode === 'edit') {
+                modalTitle.textContent = '编辑专家';
+                formMode.value = 'edit';
+                formZjno.value = expert.zjno;
+                
+                // 填充表单数据
+                document.getElementById('formZjname').value = expert.zjname;
+                document.getElementById('formZjsfno').value = expert.zjsfno;
+                document.getElementById('formZjphone').value = expert.zjphone;
+                document.getElementById('formZjemail').value = expert.zjemail;
+                document.getElementById('formZjdw').value = expert.zjdw;
+                document.getElementById('formZjbz').value = expert.zjbz;
+                document.getElementById('formZjsc').value = expert.zjsc;
+            }
+
+            modal.style.display = 'flex';
+        }
+
+        // 关闭专家模态框
+        function closeExpertModal() {
+            document.getElementById('expertModal').style.display = 'none';
+        }
+
+        // 处理编辑操作
+        async function handleEdit() {
+            const checkedBoxes = document.querySelectorAll('.expertCheckbox:checked');
+            if (checkedBoxes.length !== 1) {
+                showMessage('请选择一个专家进行编辑', true);
+                return;
+            }
+
+            const zjno = checkedBoxes[0].dataset.zjno;
+            try {
+                const experts = await DB.getAllExperts();
+                const expert = experts.find(e => e.zjno === zjno);
+                if (expert) {
+                    openExpertModal('edit', expert);
+                } else {
+                    showMessage('未找到选中的专家', true);
+                }
+            } catch (error) {
+                showMessage('获取专家数据失败: ' + error.message, true);
+            }
+        }
+
+        // 处理删除操作
+        async function handleDelete() {
+            const checkedBoxes = document.querySelectorAll('.expertCheckbox:checked');
+            if (checkedBoxes.length === 0) {
+                showMessage('请选择至少一个专家进行删除', true);
+                return;
+            }
+
+            if (!confirm('确定要删除选中的专家吗？')) return;
+
+            try {
+                for (const checkbox of checkedBoxes) {
+                    await DB.deleteExpert(checkbox.dataset.zjno);
+                }
+                showMessage('删除成功');
+                loadExpertList();
+            } catch (error) {
+                showMessage('删除失败: ' + error.message, true);
+            }
+        }
+
+        // 处理导出操作
+        async function handleExport() {
+            try {
+                const experts = await DB.getAllExperts();
+                DB.exportToExcel(experts, '专家库');
+            } catch (error) {
+                showMessage('导出失败: ' + error.message, true);
+            }
+        }
+
+        // 处理导入操作
+        // 导入错误详情模态框
+        const errorModal = document.createElement('div');
+        errorModal.className = 'form-modal';
+        errorModal.id = 'errorModal';
+        errorModal.style.display = 'none';
+        errorModal.innerHTML = `
+            <div class="form-content" style="max-height: 80vh; overflow-y: auto;">
+                <h2>导入错误详情</h2>
+                <div id="errorDetails"></div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="closeErrorBtn">关闭</button>
+                    <button type="button" class="btn btn-primary" id="copyErrorsBtn">复制错误</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(errorModal);
+
+        // 导入进度条
+        const progressModal = document.createElement('div');
+        progressModal.className = 'form-modal';
+        progressModal.id = 'progressModal';
+        progressModal.style.display = 'none';
+        progressModal.innerHTML = `
+            <div class="form-content">
+                <h2>正在导入...</h2>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                </div>
+                <p id="progressText">0/0 条记录</p>
+            </div>
+        `;
+        document.body.appendChild(progressModal);
+
+        // 关闭错误详情按钮
+        document.getElementById('closeErrorBtn').addEventListener('click', () => {
+            errorModal.style.display = 'none';
+        });
+
+        // 复制错误按钮
+        document.getElementById('copyErrorsBtn').addEventListener('click', () => {
+            const errorDetails = document.getElementById('errorDetails').innerText;
+            navigator.clipboard.writeText(errorDetails).then(() => {
+                showMessage('错误详情已复制到剪贴板');
+            });
+        });
+
+        // 下载模板按钮
+        document.getElementById('templateBtn').addEventListener('click', () => {
+            const templateContent = `姓名,身份证,电话,邮箱,单位,备注,归属
+张三,110101199001011234,13800138000,zhangsan@example.com,测试单位,测试备注,内部专家
+李四,110101199001015678,13900139000,lisi@example.com,测试单位,测试备注,外部专家`;
+            const blob = new Blob([templateContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = '专家库导入模板.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // 处理导入操作
+        async function handleImport(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 检查文件类型
+            const isCSV = file.name.endsWith('.csv');
+            const isExcel = file.name.endsWith('.xlsx') || file.name.endsWith('.xls');
+            if (!isCSV && !isExcel) {
+                showMessage('请上传CSV或Excel格式文件', true);
+                event.target.value = '';
+                return;
+            }
+
+            // 确认导入
+            if (!confirm('确定要导入专家数据吗？这将添加新专家，但不会覆盖现有数据。')) {
+                event.target.value = '';
+                return;
+            }
+
+            // 显示进度条
+            const progressModal = document.getElementById('progressModal');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            progressModal.style.display = 'flex';
+            progressBar.style.width = '0%';
+            progressText.textContent = '准备导入...';
+
+            try {
+                let content, experts;
+                if (isCSV) {
+                    content = await readFileAsText(file);
+                    experts = parseCSV(content);
+                } else {
+                    // 处理Excel文件
+                    const data = await readFileAsArrayBuffer(file);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    experts = convertExcelToExperts(jsonData);
+                }
+
+                if (experts.length === 0) {
+                    showMessage('文件中没有有效数据', true);
+                    return;
+                }
+
+                // 验证并导入数据
+                const result = await importExperts(experts, (current, total) => {
+                    const percent = Math.round((current / total) * 100);
+                    progressBar.style.width = `${percent}%`;
+                    progressText.textContent = `${current}/${experts.length} 条记录`;
+                });
+
+                // 隐藏进度条
+                progressModal.style.display = 'none';
+
+                if (result.failCount > 0) {
+                    // 显示错误详情
+                    const errorDetails = document.getElementById('errorDetails');
+                    errorDetails.innerHTML = `<pre>${result.errors.join('\n')}</pre>`;
+                    document.getElementById('errorModal').style.display = 'flex';
+                }
+
+                showMessage(`导入成功：${result.successCount}条，失败：${result.failCount}条`);
+                loadExpertList();
+            } catch (error) {
+                progressModal.style.display = 'none';
+                showMessage('导入失败: ' + error.message, true);
+            }
+
+            // 清空文件输入
+            event.target.value = '';
+        }
+
+        // 读取文件为文本
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('文件读取失败'));
+                reader.readAsText(file);
+            });
+        }
+
+        // 读取文件为ArrayBuffer
+        function readFileAsArrayBuffer(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('文件读取失败'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // 将Excel数据转换为专家对象
+        function convertExcelToExperts(jsonData) {
+            const experts = [];
+            // 跳过表头行
+            for (let i = 1; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length < 7) continue;
+
+                experts.push({
+                    zjname: row[0]?.toString().trim() || '',
+                    zjsfno: row[1]?.toString().trim() || '',
+                    zjphone: row[2]?.toString().trim() || '',
+                    zjemail: row[3]?.toString().trim() || '',
+                    zjdw: row[4]?.toString().trim() || '',
+                    zjbz: row[5]?.toString().trim() || '',
+                    zjsc: row[6]?.toString().trim() || '内部专家',
+                    zjzd: '否'
+                });
+            }
+            return experts;
+        }
+        // CSV解析函数
+        function parseCSV(content) {
+            const lines = content.split('\n');
+            const experts = [];
+            // 跳过表头行
+            for (let i = 1; i < lines.length; i++) {
+                const line = lines[i].trim();
+                if (!line) continue;
+
+                // 使用逗号分割，但处理引号内的逗号
+                const columns = [];
+                let inQuotes = false;
+                let currentColumn = '';
+                
+                for (let char of line) {
+                    if (char === '"' && !inQuotes) {
+                        inQuotes = true;
+                    } else if (char === '"' && inQuotes) {
+                        inQuotes = false;
+                    } else if (char === ',' && !inQuotes) {
+                        columns.push(currentColumn.trim());
+                        currentColumn = '';
+                    } else {
+                        currentColumn += char;
+                    }
+                }
+                columns.push(currentColumn.trim());
+
+                // 确保有足够的列
+                if (columns.length < 7) continue;
+
+                experts.push({
+                    zjname: columns[0],
+                    zjsfno: columns[1],
+                    zjphone: columns[2],
+                    zjemail: columns[3],
+                    zjdw: columns[4],
+                    zjbz: columns[5],
+                    zjsc: columns[6] || '内部专家',
+                    zjzd: '否'
+                });
+            }
+            return experts;
+        }
+
+        // 验证并导入专家数据
+        async function importExperts(experts, onProgress) {
+            const result = { successCount: 0, failCount: 0, errors: [] };
+            const existingExperts = await DB.getAllExperts();
+            let maxNo = existingExperts.reduce((max, e) => {
+                const num = parseInt(e.zjno.replace('zj', ''));
+                return num > max ? num : max;
+            }, 0);
+
+            for (let i = 0; i < experts.length; i++) {
+                const expert = experts[i];
+                try {
+                    // 验证数据
+                    if (!expert.zjname) throw new Error('姓名不能为空');
+                    if (!validateIdCard(expert.zjsfno)) throw new Error(`身份证格式错误: ${expert.zjsfno}`);
+                    if (!validatePhone(expert.zjphone)) throw new Error(`手机号格式错误: ${expert.zjphone}`);
+                    if (!validateEmail(expert.zjemail)) throw new Error(`邮箱格式错误: ${expert.zjemail}`);
+                    if (!expert.zjdw) throw new Error('单位不能为空');
+
+                    // 检查身份证是否已存在
+                    const exists = existingExperts.some(e => e.zjsfno === expert.zjsfno);
+                    if (exists) {
+                        throw new Error('身份证已存在');
+                    }
+
+                    // 生成专家编号
+                    maxNo++;
+                    expert.zjno = `zj${maxNo.toString().padStart(3, '0')}`;
+
+                    // 添加到数据库
+                    await DB.addExpert(expert);
+                    result.successCount++;
+                    existingExperts.push(expert); // 添加到现有列表，避免重复检查
+                } catch (error) {
+                    const errorMsg = `第${i+2}行 - ${expert.zjname || '未知姓名'}: ${error.message}`;
+                    result.errors.push(errorMsg);
+                    result.failCount++;
+                }
+
+                // 更新进度
+                if (onProgress) onProgress(i + 1, experts.length);
+            }
+
+            return result;
+        }
+
+        // 处理初始化操作
+        async function handleInit() {
+            if (!confirm('确定要初始化专家库吗？这将清除现有数据并恢复到初始状态。')) return;
+
+            try {
+                await DB.initDB();
+                showMessage('初始化成功');
+                loadExpertList();
+            } catch (error) {
+                showMessage('初始化失败: ' + error.message, true);
+            }
+        }
+
+        // 处理备份操作
+        async function handleBackup() {
+            try {
+                await DB.backupDB();
+                showMessage('备份成功');
+            } catch (error) {
+                showMessage('备份失败: ' + error.message, true);
+            }
+        }
+
+        // 处理表单提交
+        async function handleFormSubmit(e) {
+            e.preventDefault();
+
+            const mode = document.getElementById('formMode').value;
+            const expert = {
+                zjname: document.getElementById('formZjname').value.trim(),
+                zjsfno: document.getElementById('formZjsfno').value.trim(),
+                zjphone: document.getElementById('formZjphone').value.trim(),
+                zjemail: document.getElementById('formZjemail').value.trim(),
+                zjdw: document.getElementById('formZjdw').value.trim(),
+                zjbz: document.getElementById('formZjbz').value.trim(),
+                zjsc: document.getElementById('formZjsc').value,
+                zjzd: '否' // 默认为非指定专家
+            };
+
+            // 表单验证
+            if (!expert.zjname) return showMessage('请输入姓名', true);
+            if (!validateIdCard(expert.zjsfno)) return showMessage('请输入有效的身份证号码', true);
+            if (!validatePhone(expert.zjphone)) return showMessage('请输入有效的手机号码', true);
+            if (!validateEmail(expert.zjemail)) return showMessage('请输入有效的邮箱地址', true);
+            if (!expert.zjdw) return showMessage('请输入单位', true);
+            if (!expert.zjbz) return showMessage('请输入备注', true);
+
+            try {
+                if (mode === 'add') {
+                    // 生成专家编号
+                    const experts = await DB.getAllExperts();
+                    const maxNo = experts.reduce((max, e) => {
+                        const num = parseInt(e.zjno.replace('zj', ''));
+                        return num > max ? num : max;
+                    }, 0);
+                    expert.zjno = `zj${(maxNo + 1).toString().padStart(3, '0')}`;
+
+                    await DB.addExpert(expert);
+                    showMessage('新增专家成功');
+                } else if (mode === 'edit') {
+                    expert.zjno = document.getElementById('formZjno').value;
+                    await DB.updateExpert(expert);
+                    showMessage('编辑专家成功');
+                }
+
+                closeExpertModal();
+                loadExpertList();
+            } catch (error) {
+                showMessage('保存失败: ' + error.message, true);
+            }
+        }
+
+        // 处理全选
+        async function handleSelectAll(e) {
+            const checkboxes = document.querySelectorAll('.expertCheckbox');
+            checkboxes.forEach(checkbox => checkbox.checked = e.target.checked);
+        }
+    </script>
+</body>
+</html>

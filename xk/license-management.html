@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 声明网页的内容类型为text/html（HTML 文档），字符编码为utf-8（支持多语言，包括中文）。 -->
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <!-- 声明网页的主要语言为简体中文。-->
+    <meta http-equiv="Content-Language" content="zh-CN" />
+    <!-- 标注网页的作者为尹燕杰_yinaje，并提供联系邮箱yinaje@163.com。-->
+    <meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+    <!-- 声明网页版权归属，标注了版权标识和具体归属者尹燕杰_yinaje，强调 “保留所有权利”。 -->
+    <Meta name="Copyright" Content="尹燕杰_yinaje"/>
+    <Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+
+    <title>许可证授权_管理页</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../zjkdata/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>许可证授权 - 管理页</h1>
+
+        <div class="license-panel">
+            <h2>许可证查询</h2>
+            <div class="form-group">
+                <label for="search-keyword">搜索关键词</label>
+                <input type="text" id="search-keyword" placeholder="请输入机器码、授权用户或许可证ID...">
+            </div>
+            <div class="button-group">
+                <button id="search-btn" class="btn primary-btn">查询</button>
+                <button id="reset-search" class="btn secondary-btn">重置查询</button>
+                <button id="back-btn" class="btn secondary-btn">返回生成页</button>
+            </div>
+        </div>
+
+        <div class="license-panel">
+            <h2>许可证列表</h2>
+            <div id="no-licenses" style="display: none; text-align: center; padding: 20px;">
+                暂无许可证记录
+            </div>
+            <table id="licenses-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th>许可证ID</th>
+                        <th>机器码</th>
+                        <th>授权类型</th>
+                        <th>授权用户</th>
+                        <th>授权到期日</th>
+                        <th>授权模块</th>
+                        <th>授权验证码</th>
+                        <th>生成日期</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="licenses-table-body"></tbody>
+            </table>
+
+            <div id="pagination" class="pagination" style="display: none;">
+                <li><button id="prev-page" disabled>上一页</button></li>
+                <div id="page-numbers"></div>
+                <li><button id="next-page" disabled>下一页</button></li>
+            </div>
+        </div>
+    </div>
+ 
+    <!--底部版权归属说明 ，布局紧贴底部-->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; 
+            padding: 15px 0;  ">
+
+        <!-- 版权文字 -->
+    <p style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+       软件著作版权归属：<a href="http://www.yinaje.com" target="_blank" style="color:#666">尹燕杰_yinaje</a>
+    </p>
+    </div>
+    <script src="../js/crypto-utils.js"></script>
+    <script src="../js/license-utils.js"></script>
+    <script src="license-management.js"></script>
+</body>
+</html>

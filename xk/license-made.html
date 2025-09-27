@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 声明网页的内容类型为text/html（HTML 文档），字符编码为utf-8（支持多语言，包括中文）。 -->
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<!-- 声明网页的主要语言为简体中文。-->
+	<meta http-equiv="Content-Language" content="zh-CN" />
+	<!-- 标注网页的作者为尹燕杰_yinaje，并提供联系邮箱yinaje@163.com。-->
+	<meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+	<!-- 声明网页版权归属，标注了版权标识和具体归属者尹燕杰_yinaje，强调 “保留所有权利”。 -->
+	<Meta name="Copyright" Content="尹燕杰_yinaje"/>
+	<Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+    
+    <title>许可证授权_生成页</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <script src="../js/crypto-utils.js"></script>
+    <script src="../js/license-utils.js"></script>
+    <!--<script src="../js/yinaje_key_argon2-utils.js"></script> 在本地接口升级时，需要引入该文件 -->
+    <script src="license-made.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>许可证授权 - 生成页</h1>
+
+        <div class="license-panel">
+            <h2>许可证信息录入区</h2>
+
+            <div class="form-group">
+                <label for="machine-code">机器码</label>
+                <input type="text" id="machine-code" placeholder="请输入要授权的机器码" required>
+            </div>
+
+            <div class="form-group">
+                <label for="auth-type">授权类型</label>
+                <select id="auth-type" required>
+                    <option value="试用类型">试用类型</option>
+                    <option value="个人类型">个人类型</option>
+                    <option value="企业类型">企业类型</option>
+                    <option value="永久授权">永久授权</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="expire-date-group">
+                <label for="expire-date">授权到期日</label>
+                <input type="date" id="expire-date" required>
+            </div>
+
+            <div class="form-group">
+                <label for="auth-user">授权用户</label>
+                <input type="text" id="auth-user" placeholder="请输入授权用户名称" required>
+            </div>
+
+            <div class="form-group">
+                <label>授权模块 (可多选)</label>
+                <div>
+                    <input type="checkbox" id="module-all" value="all" checked>
+                    <label for="module-all">通用功能</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="module-a1" value="a1">
+                    <label for="module-a1">A1功能</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="module-a2" value="a2">
+                    <label for="module-a2">A2功能</label>
+                </div>
+                <div>
+                    <input type="checkbox" id="module-a3" value="a3">
+                    <label for="module-a3">A3功能</label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="generate-btn" class="btn primary-btn">生成许可证</button>
+                <button id="reset-form" class="btn secondary-btn">重置信息</button>
+                <button id="manage-licenses" class="btn primary-btn" >许可证管理</button>
+            </div>
+        </div>
+
+        <div id="license-result" class="license-panel" style="display: none;">
+            <h2>许可证生成区</h2>
+            <div class="form-group">
+                <label>许可证文件</label>
+                <div class="button-group">
+                    <button id="download-license" class="btn primary-btn">下载许可证文件</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="generated-license-content">许可证内容</label>
+                <textarea id="generated-license-content" rows="10" readonly></textarea>
+                <div class="button-group">
+                    <button id="copy-license-content" class="btn secondary-btn">复制内容</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--底部版权归属说明 ，布局紧贴底部-->
+    <div style="position: fixed; bottom: 0; left: 0; right: 0; 
+            padding: 15px 0;  ">
+
+        <!-- 版权文字 -->
+    <p style="text-align: center; margin-top: 15px; color: #666; font-size: 14px;">
+       软件著作版权归属：<a href="http://www.yinaje.com" target="_blank" style="color:#666">尹燕杰_yinaje</a>
+    </p>
+    </div>
+</body>
+</html>
