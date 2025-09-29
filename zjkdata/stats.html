@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+    <meta http-equiv="Content-Language" content="zh-CN" />
+    <meta name="author" content="尹燕杰_yinaje,yinaje@163.com" />
+    <Meta name="Copyright" Content="尹燕杰_yinaje"/>
+    <Meta name="Copyright" Content="本页版权归尹燕杰_yinaje所有。All Rights Reserved"/>
+    <title>专家库系统V3 - 数据统计</title>
+    <link rel="stylesheet" href="zjk.css">
+    <style>
+        /* 扩大本页容器宽度（仅影响本页） */
+        .container { max-width: 1400px; }
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 20px 0; }
+        .card { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        .card h3 { margin: 0 0 8px; font-size: 16px; color: #333; }
+        .card .value { font-size: 24px; font-weight: bold; color: #2c3e50; }
+        .chart { background: #fff; border-radius: 8px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-top: 20px; }
+        .chart h3 { margin: 0 0 16px; font-size: 16px; }
+        /* 让SVG自适应宽度并保持纵横比，避免页面变宽时图形拉伸变形 */
+        .svg-container { width: 100%; height: auto; display: block; }
+        /* 根据viewBox设定的固有比例，确保不同图的高度正确 */
+        #donutChart { aspect-ratio: 5 / 4; }
+        #barChart { aspect-ratio: 5 / 2; }
+        .bar-label { font-size: 12px; fill: #555; }
+        .bar-value { font-size: 12px; fill: #333; }
+        @media (max-width: 768px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } }
+    </style>
+</head>
+<body>
+<header class="header">
+    <div class="container header-content">
+        <div class="logo">专家库系统V3</div>
+        <button class="menu-toggle" id="menuToggle">☰</button>
+        <ul class="nav-menu" id="navMenu"></ul>
+    </div>
+</header>
+
+<main class="container">
+    <div class="toolbar" style="display:flex;justify-content:space-between;align-items:center;margin-top:20px;padding:15px;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+        <div class="search-group">
+            <label for="affiliationFilter" style="margin-right:8px;">归属：</label>
+            <select id="affiliationFilter">
+                <option value="all">全部</option>
+                <option value="internal">内聘</option>
+                <option value="external">外聘</option>
+            </select>
+            <label for="keyword" style="margin:0 8px 0 16px;">关键词：</label>
+            <input id="keyword" type="text" placeholder="姓名/单位/专业…" style="width:220px;" />
+            <button id="applyFilter" class="btn btn-primary" style="margin-left:10px;">应用筛选</button>
+            <button id="resetFilter" class="btn" style="margin-left:6px;">重置</button>
+        </div>
+        <div class="button-group">
+            <button id="seedDataBtn" class="btn btn-success">生成测试数据</button>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="card"><h3>专家总数</h3><div class="value" id="totalCount">0</div></div>
+        <div class="card"><h3>内聘专家</h3><div class="value" id="internalCount">0</div></div>
+        <div class="card"><h3>外聘专家</h3><div class="value" id="externalCount">0</div></div>
+        <div class="card"><h3>指定专家</h3><div class="value" id="designatedStatus">无</div></div>
+        <div class="card"><h3>单位总数</h3><div class="value" id="unitCount">0</div></div>
+        <div class="card"><h3>数据完整率</h3><div class="value" id="dataCompleteness">0%</div></div>
+    </div>
+
+    <div class="chart">
+        <h3>归属比例</h3>
+        <svg id="donutChart" class="svg-container" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+
+    <div class="chart">
+        <h3>单位 Top10（按专家数量）</h3>
+        <svg id="barChart" class="svg-container" viewBox="0 0 800 320" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+</main>
+<script src="zjk.js"></script>
+<script src="db.js"></script>
+<script src="stats.js"></script>
+</body>
+</html>

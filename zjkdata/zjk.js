@@ -1,3 +1,6 @@
+/**
+ * 页面通用初始化：登录校验、菜单与移动端切换初始化。
+ */
 document.addEventListener('DOMContentLoaded', function() {
     // 检查登录状态
     checkLoginStatus();
@@ -8,6 +11,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // 检查登录状态，如果未登录则跳转至登录页
+/**
+ * 检查登录状态，未登录则跳转登录页。
+ * @returns {boolean} 已登录返回 true，未登录返回 false
+ */
 function checkLoginStatus() {
     if (!localStorage.getItem('isLoggedIn')) {
         window.location.href = '../index.html';
@@ -17,9 +24,16 @@ function checkLoginStatus() {
 }
 
 // 根据用户角色初始化菜单
+/**
+ * 根据用户角色初始化顶部导航菜单（幂等）。
+ * 会在每次调用前清空菜单，避免重复渲染。
+ */
 function initMenu() {
     const navMenu = document.getElementById('navMenu');
     if (!navMenu) return;
+
+    // 防重复：每次初始化前清空菜单内容
+    navMenu.innerHTML = '';
 
     const role = localStorage.getItem('role');
     const username = localStorage.getItem('username');
@@ -32,14 +46,16 @@ function initMenu() {
                 { name: '主页', url: 'home.html' },
                 { name: '专家库', url: 'expert.html' },
                 { name: '指定专家', url: 'designated.html' },
-                { name: '专家组名单', url: 'group.html' }
+                { name: '专家组名单', url: 'group.html' },
+                { name: '数据统计', url: 'stats.html' }
             ];
             break;
         case 'maintainer':
             menuItems = [
                 { name: '主页', url: 'home.html' },
                 { name: '专家库', url: 'expert.html' },
-                { name: '专家组名单', url: 'group.html' }
+                { name: '专家组名单', url: 'group.html' },
+                { name: '数据统计', url: 'stats.html' }
             ];
             break;
         case 'expert':
@@ -75,18 +91,27 @@ function initMenu() {
 }
 
 // 初始化移动端菜单切换
+/**
+ * 初始化移动端菜单切换（防重复绑定）。
+ */
 function initMobileMenu() {
     const menuToggle = document.getElementById('menuToggle');
     const navMenu = document.getElementById('navMenu');
 
     if (menuToggle && navMenu) {
+        // 防重复绑定：若已绑定过，则直接返回
+        if (menuToggle.dataset.bound === '1') return;
         menuToggle.addEventListener('click', function() {
             navMenu.classList.toggle('active');
         });
+        menuToggle.dataset.bound = '1';
     }
 }
 
 // 退出登录
+/**
+ * 退出登录并跳转登录页。
+ */
 function logout() {
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('username');
@@ -95,6 +120,11 @@ function logout() {
 }
 
 // 通用工具函数 - 显示消息提示
+/**
+ * 显示全局消息提示。
+ * @param {string} message 文本消息
+ * @param {boolean} [isError=false] 是否为错误消息
+ */
 function showMessage(message, isError = false) {
     const messageEl = document.createElement('div');
     messageEl.className = isError ? 'error-message' : 'success-message';
@@ -117,24 +147,43 @@ function showMessage(message, isError = false) {
 }
 
 // 通用工具函数 - 验证身份证格式
+/**
+ * 验证身份证格式（15/18位，支持末位 X）。
+ * @param {string} id 身份证号
+ * @returns {boolean} 是否有效
+ */
 function validateIdCard(id) {
     const reg = /(^\d{15}$)|(^\d{18}$)|(^\d{17}(\d|X|x)$)/;
     return reg.test(id);
 }
 
 // 通用工具函数 - 验证手机号格式
+/**
+ * 验证手机号格式（大陆手机号段）。
+ * @param {string} phone 手机号
+ * @returns {boolean} 是否有效
+ */
 function validatePhone(phone) {
     const reg = /^1[3-9]\d{9}$/;
     return reg.test(phone);
 }
 
 // 通用工具函数 - 验证邮箱格式
+/**
+ * 验证邮箱格式。
+ * @param {string} email 邮箱
+ * @returns {boolean} 是否有效
+ */
 function validateEmail(email) {
     const reg = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return reg.test(email);
 }
 
 // 通用工具函数 - 获取当前日期时间字符串
+/**
+ * 获取当前日期时间字符串（ISO 精简格式）。
+ * @returns {string} 形如 2025-09-29_16-00-00 的字符串
+ */
 function getCurrentDateTime() {
     const now = new Date();
     return now.toISOString().replace(/T/, '_').replace(/:/g, '-').replace(/\..+/, '');

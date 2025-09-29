@@ -13,7 +13,7 @@ body {
 }
 
 .container {
-    max-width: 1200px;
+    max-width: 1600px;
     margin: 0 auto;
     padding: 0 20px;
 }
@@ -148,6 +148,10 @@ body {
     .nav-menu.active {
         display: flex;
     }
+
+    /* 移动端允许表格内容换行，避免过长的横向滚动 */
+    .data-table th, .data-table td { white-space: normal; }
+    .table-container { overflow-x: auto; }
 }
 
 /* 按钮通用样式 */
@@ -193,7 +197,8 @@ body {
     background: white;
     border-radius: 8px;
     box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    overflow: hidden;
+    overflow-x: auto; /* 列字段较多时允许横向滚动，避免强制换行 */
+    overflow-y: hidden;
 }
 
 .data-table {
@@ -205,6 +210,8 @@ body {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #ddd;
+    white-space: nowrap; /* 默认不换行，提升可读性 */
+    word-break: keep-all; /* 保持英文/数字整体，不随意断词 */
 }
 
 .data-table th {

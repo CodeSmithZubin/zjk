@@ -1,9 +1,23 @@
+/*
+ * 文件: db.js
+ * 描述: IndexedDB 封装，提供专家库的增删改查、指定专家设置、备份与导出能力。
+ * 说明: 在不改变现有 API 的前提下，逐步规范结构并补充可测试的扩展功能。
+ */
+'use strict'
+/**
+ * IndexedDB 封装：提供专家库的增删改查、指定专家设置、备份与导出能力。
+ * 所有函数均返回 Promise，发生错误时抛出标准 Error，便于统一处理。
+ */
 // 数据库名称和版本
 const DB_NAME = 'zjkdb';
 const DB_VERSION = 1;
 const STORE_NAME = 'zjk';
 
 // 打开数据库连接
+/**
+ * 打开并升级 IndexedDB 数据库连接。
+ * @returns {Promise<IDBDatabase>} 解析为数据库实例
+ */
 function openDB() {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(DB_NAME, DB_VERSION);
@@ -38,6 +52,10 @@ function openDB() {
 }
 
 // 获取所有专家数据
+/**
+ * 获取全部专家记录。
+ * @returns {Promise<Array<object>>} 专家数组
+ */
 function getAllExperts() {
     return new Promise(async (resolve, reject) => {
         try {
@@ -61,6 +79,11 @@ function getAllExperts() {
 }
 
 // 根据条件查询专家
+/**
+ * 根据条件查询专家。
+ * @param {{zjsc?: string, keyword?: string}} [query] 过滤条件：归属或关键词
+ * @returns {Promise<Array<object>>} 过滤后的专家数组
+ */
 function queryExperts(query = {}) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -102,6 +125,11 @@ function queryExperts(query = {}) {
 }
 
 // 添加专家
+/**
+ * 新增专家记录。
+ * @param {object} expert 专家对象，须包含 `zjno` 等字段
+ * @returns {Promise<boolean>} 成功返回 true
+ */
 function addExpert(expert) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -121,6 +149,11 @@ function addExpert(expert) {
 }
 
 // 更新专家
+/**
+ * 更新专家记录。
+ * @param {object} expert 专家对象，按主键 `zjno` 覆盖更新
+ * @returns {Promise<boolean>} 成功返回 true
+ */
 function updateExpert(expert) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -140,6 +173,11 @@ function updateExpert(expert) {
 }
 
 // 删除专家
+/**
+ * 删除专家记录。
+ * @param {string} zjno 专家编号主键
+ * @returns {Promise<boolean>} 成功返回 true
+ */
 function deleteExpert(zjno) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -163,6 +201,10 @@ function deleteExpert(zjno) {
 }
 
 // 获取指定专家
+/**
+ * 获取当前被标记为“指定专家”的记录。
+ * @returns {Promise<object|null>} 若存在则返回专家对象，否则为 null
+ */
 function getDesignatedExpert() {
     return new Promise(async (resolve, reject) => {
         try {
@@ -187,6 +229,11 @@ function getDesignatedExpert() {
 }
 
 // 设置指定专家
+/**
+ * 设置“指定专家”。会将已指定的专家全部取消后，设置新的指定专家。
+ * @param {string} zjno 需要设为指定的专家编号
+ * @returns {Promise<boolean>} 设置成功返回 true
+ */
 function setDesignatedExpert(zjno) {
     return new Promise(async (resolve, reject) => {
         try {
@@ -236,6 +283,10 @@ function setDesignatedExpert(zjno) {
 }
 
 // 初始化数据库（使用嵌入式初始数据）
+/**
+ * 初始化数据库：清空并写入嵌入式初始数据。
+ * @returns {Promise<boolean>} 初始化成功返回 true
+ */
 async function initDB() {
     try {
         // 清空现有数据
@@ -320,20 +371,28 @@ async function initDB() {
         }
         await Promise.all(addPromises);
         
-        // 验证数据是否成功插入
-        const verifyExperts = await objectStore.getAll();
-        if (verifyExperts.length !== initialData.length) {
+        // 验证数据是否成功插入（修复 getAll 异步使用）
+        const verifyExperts = await new Promise((resolve, reject) => {
+            const req = objectStore.getAll();
+            req.onsuccess = () => resolve(req.result || []);
+            req.onerror = () => reject(req.error);
+        });
+        if ((verifyExperts || []).length !== initialData.length) {
             throw new Error('数据初始化不完整');
         }
         
-        resolve(true);
+        return true;
     } catch (error) {
         console.error('初始化数据库失败:', error);
-        reject(error);
+        throw error;
     }
 }
 
 // 备份数据库
+/**
+ * 备份当前专家数据为 JSON 文件并触发下载。
+ * @returns {Promise<boolean>} 备份成功返回 true
+ */
 function backupDB() {
     return new Promise(async (resolve, reject) => {
         try {
@@ -365,6 +424,12 @@ function backupDB() {
 }
 
 // 导出专家数据为Excel
+/**
+ * 导出专家数据为 Excel 文件（使用 `xlsx` 库）。
+ * @param {Array<object>} experts 专家数据列表
+ * @param {string} [fileName='experts'] 导出文件前缀名
+ * @returns {void}
+ */
 function exportToExcel(experts, fileName = 'experts') {
     // 使用xlsx库生成Excel文件
     const worksheet = XLSX.utils.json_to_sheet(experts.map(expert => ({
@@ -384,6 +449,36 @@ function exportToExcel(experts, fileName = 'experts') {
     XLSX.writeFile(workbook, `${fileName}_${timestamp}.xlsx`);
 }
 
+// 新增：从 JSON 数组导入专家数据（用于测试与数据恢复）
+/**
+ * 从 JSON 数组导入专家数据（覆盖式导入）。
+ * @param {Array<object>} experts 专家数组
+ * @returns {Promise<boolean>} 导入完成返回 true
+ */
+async function importFromJSON(experts) {
+    if (!Array.isArray(experts)) throw new Error('入参必须为专家数组');
+    const db = await openDB();
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+
+    // 先清空
+    await new Promise((resolve, reject) => {
+        const clearReq = store.clear();
+        clearReq.onsuccess = () => resolve();
+        clearReq.onerror = () => reject(clearReq.error);
+    });
+
+    // 批量导入
+    for (const expert of experts) {
+        await new Promise((resolve, reject) => {
+            const req = store.put(expert);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+    return true;
+}
+
 // 暴露公共API
 window.DB = {
     openDB,
@@ -396,5 +491,6 @@ window.DB = {
     setDesignatedExpert,
     initDB,
     backupDB,
-    exportToExcel
+    exportToExcel,
+    importFromJSON
 };
