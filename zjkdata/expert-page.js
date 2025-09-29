@@ -49,14 +49,24 @@ function hideById(id) {
  * @param {number} [page=1] 当前页码
  * @returns {Promise<void>}
  */
-async function loadExpertList(page = 1) {
+// 全局分页状态（持久化每页条数）
+const PAGE = {
+  page: 1,
+  pageSize: parseInt(localStorage.getItem('pageSize') || '20', 10),
+  total: 0,
+  data: []
+};
+
+async function loadExpertList(page = 1, data = null) {
   try {
-    const experts = await DB.getAllExperts();
-    const pageSize = 20;
-    const startIndex = (page - 1) * pageSize;
-    const paginatedExperts = experts.slice(startIndex, startIndex + pageSize);
+    const experts = data || await DB.getAllExperts();
+    PAGE.total = experts.length;
+    PAGE.page = page;
+    PAGE.data = experts;
+    const startIndex = (page - 1) * PAGE.pageSize;
+    const paginatedExperts = experts.slice(startIndex, startIndex + PAGE.pageSize);
     renderExpertTable(paginatedExperts);
-    renderPagination(experts.length);
+    renderPagination(PAGE.total);
 
     // 数据为空时自动初始化
     if (experts.length === 0) {
@@ -65,9 +75,12 @@ async function loadExpertList(page = 1) {
         await DB.initDB();
         showMessage('专家库数据初始化成功', false);
         const newExperts = await DB.getAllExperts();
-        const newPaginatedExperts = newExperts.slice(startIndex, startIndex + pageSize);
+        PAGE.total = newExperts.length;
+        PAGE.page = page;
+        PAGE.data = newExperts;
+        const newPaginatedExperts = newExperts.slice(startIndex, startIndex + PAGE.pageSize);
         renderExpertTable(newPaginatedExperts);
-        renderPagination(newExperts.length);
+        renderPagination(PAGE.total);
       } catch (initError) {
         showMessage('自动初始化失败，请手动点击"初始化"按钮', true);
         console.error('初始化失败:', initError);
@@ -117,26 +130,103 @@ function renderExpertTable(experts) {
  * @param {number} totalItems 数据总条数
  */
 function renderPagination(totalItems) {
-  const pagination = document.getElementById('pagination');
-  pagination.innerHTML = '';
+  const container = document.getElementById('pagination');
+  container.innerHTML = '';
 
-  const totalPages = Math.ceil(totalItems / 20);
-  if (totalPages <= 1) return;
+  const totalPages = Math.max(1, Math.ceil(totalItems / PAGE.pageSize));
 
-  for (let i = 1; i <= totalPages; i++) {
-    const li = document.createElement('li');
-    li.innerHTML = `<button class="page-btn ${i === 1 ? 'active' : ''}" data-page="${i}">${i}</button>`;
-    pagination.appendChild(li);
-  }
+  // 信息区：总条数/页大小/页码
+  const info = document.createElement('div');
+  info.className = 'pagination-info';
+  const start = totalItems ? (PAGE.page - 1) * PAGE.pageSize + 1 : 0;
+  const end = Math.min(PAGE.page * PAGE.pageSize, totalItems);
 
-  document.querySelectorAll('.page-btn').forEach(btn => {
-    btn.addEventListener('click', function() {
-      const page = parseInt(this.dataset.page);
-      loadExpertList(page);
-      document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
-      this.classList.add('active');
-    });
+  const sizeSelect = document.createElement('select');
+  sizeSelect.className = 'page-size-select';
+  [10, 20, 50, 100].forEach(n => {
+    const opt = document.createElement('option');
+    opt.value = String(n);
+    opt.textContent = `每页 ${n}`;
+    if (n === PAGE.pageSize) opt.selected = true;
+    sizeSelect.appendChild(opt);
   });
+  sizeSelect.addEventListener('change', () => {
+    PAGE.pageSize = parseInt(sizeSelect.value, 10);
+    localStorage.setItem('pageSize', String(PAGE.pageSize));
+    loadExpertList(1, PAGE.data);
+  });
+
+  const infoText = document.createElement('span');
+  infoText.textContent = `共 ${totalItems} 条 · 第 ${PAGE.page}/${totalPages} 页 · 显示 ${start}-${end}`;
+  info.appendChild(infoText);
+  info.appendChild(sizeSelect);
+
+  // 控件区：首页/上一页/数字/下一页/末页 + 跳页
+  const controls = document.createElement('div');
+  controls.className = 'pagination-controls';
+
+  const mkBtn = (label, action, disabled = false) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.className = 'page-btn';
+    btn.disabled = disabled;
+    btn.addEventListener('click', action);
+    return btn;
+  };
+
+  const goFirst = mkBtn('首页', () => loadExpertList(1, PAGE.data), PAGE.page === 1);
+  const goPrev = mkBtn('上一页', () => loadExpertList(PAGE.page - 1, PAGE.data), PAGE.page === 1);
+  controls.appendChild(goFirst);
+  controls.appendChild(goPrev);
+
+  // 数字区（带省略号）
+  const range = 2;
+  const startPage = Math.max(1, PAGE.page - range);
+  const endPage = Math.min(totalPages, PAGE.page + range);
+  const addNumberBtn = p => {
+    const btn = mkBtn(String(p), () => loadExpertList(p, PAGE.data));
+    if (p === PAGE.page) btn.classList.add('active');
+    controls.appendChild(btn);
+  };
+  if (startPage > 1) addNumberBtn(1);
+  if (startPage > 2) controls.appendChild(document.createTextNode('…'));
+  for (let p = startPage; p <= endPage; p++) addNumberBtn(p);
+  if (endPage < totalPages - 1) controls.appendChild(document.createTextNode('…'));
+  if (endPage < totalPages) addNumberBtn(totalPages);
+
+  const goNext = mkBtn('下一页', () => loadExpertList(PAGE.page + 1, PAGE.data), PAGE.page >= totalPages);
+  const goLast = mkBtn('末页', () => loadExpertList(totalPages, PAGE.data), PAGE.page >= totalPages);
+  controls.appendChild(goNext);
+  controls.appendChild(goLast);
+
+  // 跳转页码
+  const jumpWrap = document.createElement('span');
+  jumpWrap.style.marginLeft = '8px';
+  const jumpInput = document.createElement('input');
+  jumpInput.type = 'number';
+  jumpInput.min = '1';
+  jumpInput.max = String(totalPages);
+  jumpInput.placeholder = '跳转页';
+  jumpInput.style.width = '80px';
+  const jumpBtn = mkBtn('Go', () => {
+    const target = parseInt(jumpInput.value || '0', 10);
+    if (isNaN(target) || target < 1 || target > totalPages) return;
+    loadExpertList(target, PAGE.data);
+  }, false);
+  jumpWrap.appendChild(jumpInput);
+  jumpWrap.appendChild(jumpBtn);
+  controls.appendChild(jumpWrap);
+
+  // 键盘快捷键：左右翻页
+  container.onkeydown = (e) => {
+    if (e.key === 'ArrowLeft' && PAGE.page > 1) loadExpertList(PAGE.page - 1, PAGE.data);
+    if (e.key === 'ArrowRight' && PAGE.page < totalPages) loadExpertList(PAGE.page + 1, PAGE.data);
+  };
+  container.tabIndex = 0; // 允许容器获取焦点
+
+  // 拼装
+  container.appendChild(info);
+  container.appendChild(controls);
 }
 
 // 绑定事件处理程序
@@ -178,8 +268,7 @@ async function handleSearch() {
     if (zjsc !== '全部专家') query.zjsc = zjsc;
     if (keyword) query.keyword = keyword;
     const experts = await DB.queryExperts(query);
-    renderExpertTable(experts);
-    renderPagination(experts.length);
+    loadExpertList(1, experts);
   } catch (error) {
     showMessage('搜索失败: ' + error.message, true);
   }

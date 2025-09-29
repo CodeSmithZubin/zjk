@@ -282,9 +282,12 @@ body {
 /* 分页样式 */
 .pagination {
     display: flex;
-    justify-content: center;
+    justify-content: space-between; /* 左右分区：信息 与 控件 */
+    align-items: center;
     list-style: none;
     margin: 20px 0;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
 .pagination li {
@@ -297,7 +300,8 @@ body {
     border-radius: 4px;
     background-color: white;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 }
 
 .pagination button:hover,
@@ -305,6 +309,28 @@ body {
     background-color: #3498db;
     color: white;
     border-color: #3498db;
+    box-shadow: 0 4px 10px rgba(52,152,219,0.3);
+}
+
+/* 分页信息与控件分区 */
+.pagination-info {
+    color: #666;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.page-size-select {
+    padding: 6px 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
 
 /* 工具栏样式 */
